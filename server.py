@@ -29,19 +29,24 @@ class MyServer(BaseHTTPRequestHandler):
 
         self.wfile.write(bytes("<html><head><title>T1 LAB SISOP</title></head>", "utf-8"))
         self.wfile.write(bytes("<body>", "utf-8"))
-        self.wfile.write(bytes("<h1>Trabalho 1 da disciplina de Laboratório de Sistemas Operacionais</h1>", "utf-8"))
+        self.wfile.write(bytes("<h1>Trabalho 1 da disciplina de Laboratorio de Sistemas Operacionais</h1>", "utf-8"))
         self.wfile.write(bytes("<h1>Gabriela Zorzo e Lucas Andreotti</h1>", "utf-8"))
         self.wfile.write(bytes("<p>Dados do servidor.</p>", "utf-8"))
         self.wfile.write(bytes("<p>Hora e hora do sistema: %s.</p>" % current_time, "utf-8"))
         self.wfile.write(bytes("<p>Modelo do processador: %s.</p>" % processor_model, "utf-8"))
         self.wfile.write(bytes("<p>Velocidade atual do processador: %s MHz.</p>" % processor_speed, "utf-8"))
-        self.wfile.write(bytes("<p>Número de processadores: %s.</p>" % processor_number, "utf-8"))
+        self.wfile.write(bytes("<p>Numero de processadores: %s.</p>" % processor_number, "utf-8"))
         self.wfile.write(bytes("<p>Capacidade ocupada do processador: %s%%.</p>" % cpu_usage, "utf-8"))
-        self.wfile.write(bytes("<p>Memória total: %s MB.</p>" % memory_total, "utf-8"))
-        self.wfile.write(bytes("<p>Memória usada: %s MB.</p>" % memory_used, "utf-8"))
-        self.wfile.write(bytes("<p>Versão do sistema: %s.</p>" % system_version, "utf-8"))
+        self.wfile.write(bytes("<p>Memoria total: %s MB.</p>" % memory_total, "utf-8"))
+        self.wfile.write(bytes("<p>Memoria usada: %s MB.</p>" % memory_used, "utf-8"))
+        self.wfile.write(bytes("<p>Versao do sistema: %s.</p>" % system_version, "utf-8"))
+        self.wfile.write(bytes("<p>Lista de processos (PID nome):</p><ul>", "utf-8"))
+
+        for process in psutil.process_iter():
+            s = "<li>" + str(process.pid) + " " + process.name() + "</li>"
+            self.wfile.write(bytes(s, "utf-8"))
         
-        self.wfile.write(bytes("</body></html>", "utf-8"))
+        self.wfile.write(bytes("</ul></body></html>", "utf-8"))
         
 if __name__ == "__main__":              
     webServer = HTTPServer((hostName, serverPort), MyServer)
