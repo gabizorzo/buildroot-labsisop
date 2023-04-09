@@ -4,7 +4,7 @@ import psutil
 import platform
 import os
 
-hostName = "localhost"
+hostName = "192.168.1.10"
 serverPort = 8080
 
 class MyServer(BaseHTTPRequestHandler):
@@ -15,6 +15,7 @@ class MyServer(BaseHTTPRequestHandler):
 
         t = time.localtime()
         current_time = time.asctime(t)
+        uptime = time.time()  - psutil.boot_time()
 
         cpu_usage = psutil.cpu_percent(4)
 
@@ -33,6 +34,7 @@ class MyServer(BaseHTTPRequestHandler):
         self.wfile.write(bytes("<h1>Gabriela Zorzo e Lucas Andreotti</h1>", "utf-8"))
         self.wfile.write(bytes("<p>Dados do servidor.</p>", "utf-8"))
         self.wfile.write(bytes("<p>Hora e hora do sistema: %s.</p>" % current_time, "utf-8"))
+        self.wfile.write(bytes("<p>Uptime: %s segundos.</p>" % uptime, "utf-8"))
         self.wfile.write(bytes("<p>Modelo do processador: %s.</p>" % processor_model, "utf-8"))
         self.wfile.write(bytes("<p>Velocidade atual do processador: %s MHz.</p>" % processor_speed, "utf-8"))
         self.wfile.write(bytes("<p>Numero de processadores: %s.</p>" % processor_number, "utf-8"))
