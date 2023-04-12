@@ -3,6 +3,7 @@ import time
 import psutil
 import platform
 import os
+import subprocess
 
 hostName = "192.168.1.10"
 serverPort = 8080
@@ -14,19 +15,21 @@ class MyServer(BaseHTTPRequestHandler):
         self.end_headers()
 
         t = time.localtime()
-        current_time = time.asctime(t)
-        uptime = time.time()  - psutil.boot_time()
+        current_time = subprocess.check_output("date", shell=True).decode('utf8')
+        uptimes = subprocess.check_output("cat /proc/uptime", shell=True).decode('utf8').split()
+        uptime = uptimes[0]
 
         cpu_usage = psutil.cpu_percent(4)
 
-        processor_model = platform.platform()
-        processor_speed = psutil.cpu_freq().current
-        processor_number = os.cpu_count()
+        processor_model = subprocess.check_output("cat /proc/cpuinfo | grep 'model name'",shell=True).decode('utf8')
+        processor_speed = subprocess.check_output("cat /proc/cpuinfo | grep 'cpu MHz'", shell=True).decode('utf8')
+        processor_number = subprocess.check_output("cat /proc/cpuinfo | grep 'cpu cores'", shell=True).decode('utf8')
 
-        system_version = os.uname().version
+        system_version = subprocess.check_output("cat /proc/version",shell=True).decode('utf8')
 
-        memory_total = psutil.virtual_memory().total / 1024
-        memory_used = psutil.virtual_memory().used / 1024
+        memory_total = subprocess.check_output("cat /proc/meminfo | grep MemTotal",shell=True).decode('utf8')[10:-3]
+        memory_free = subprocess.check_output("cat /proc/meminfo | grep MemFree",shell=True).decode('utf8')[9:-3]
+        memory_used = str(int(memory_total) - int(memory_free))
 
         self.wfile.write(bytes("<html><head><title>T1 LAB SISOP</title></head>", "utf-8"))
         self.wfile.write(bytes("<body>", "utf-8"))
@@ -40,13 +43,14 @@ class MyServer(BaseHTTPRequestHandler):
         self.wfile.write(bytes("<p>Numero de processadores: %s.</p>" % processor_number, "utf-8"))
         self.wfile.write(bytes("<p>Capacidade ocupada do processador: %s%%.</p>" % cpu_usage, "utf-8"))
         self.wfile.write(bytes("<p>Memoria total: %s MB.</p>" % memory_total, "utf-8"))
+        self.wfile.write(bytes("<p>Memoria livre: %s MB.</p>" % memory_free, "utf-8"))
         self.wfile.write(bytes("<p>Memoria usada: %s MB.</p>" % memory_used, "utf-8"))
         self.wfile.write(bytes("<p>Versao do sistema: %s.</p>" % system_version, "utf-8"))
-        self.wfile.write(bytes("<p>Lista de processos (PID nome):</p><ul>", "utf-8"))
+        self.wfile.write(bytes("<p>Lista de processos:</p><ul>", "utf-8"))
 
-        for process in psutil.process_iter():
-            s = "<li>" + str(process.pid) + " " + process.name() + "</li>"
-            self.wfile.write(bytes(s, "utf-8"))
+        processes_list = subprocess.Popen(['ps','a'], stdout=subprocess.PIPE).stdout.readlines()
+        for p in processes_list:
+            self.wfile.write(bytes("<li> %s </li>" % p[1:-1].decode('utf-8'), "utf-8"))
         
         self.wfile.write(bytes("</ul></body></html>", "utf-8"))
         
