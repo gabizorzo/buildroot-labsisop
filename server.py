@@ -1,9 +1,8 @@
 from http.server import BaseHTTPRequestHandler, HTTPServer
-import time
-import psutil
-import platform
-import os
+from time import sleep
+import sys
 import subprocess
+import os
 
 hostName = "192.168.1.10"
 serverPort = 8080
@@ -14,12 +13,12 @@ class MyServer(BaseHTTPRequestHandler):
         self.send_header("Content-type", "text/html")
         self.end_headers()
 
-        t = time.localtime()
-        current_time = subprocess.check_output("date", shell=True).decode('utf8')
+        current_time = os.popen('date').read()
         uptimes = subprocess.check_output("cat /proc/uptime", shell=True).decode('utf8').split()
         uptime = uptimes[0]
 
-        cpu_usage = psutil.cpu_percent(4)
+        cpu = GetCpuLoad()
+        cpu_usage = cpu.getcpuload()
 
         processor_model = subprocess.check_output("cat /proc/cpuinfo | grep 'model name'",shell=True).decode('utf8')
         processor_speed = subprocess.check_output("cat /proc/cpuinfo | grep 'cpu MHz'", shell=True).decode('utf8')
@@ -53,6 +52,47 @@ class MyServer(BaseHTTPRequestHandler):
             self.wfile.write(bytes("<li> %s </li>" % p[1:-1].decode('utf-8'), "utf-8"))
         
         self.wfile.write(bytes("</ul></body></html>", "utf-8"))
+
+class GetCpuLoad(object):
+    def __init__(self, percentage=True, sleeptime = 1):
+        self.percentage = percentage
+        self.cpustat = '/proc/stat'
+        self.sep = ' ' 
+        self.sleeptime = sleeptime
+
+    def getcputime(self):
+        cpu_infos = {}
+        with open(self.cpustat,'r') as f_stat:
+            lines = [line.split(self.sep) for content in f_stat.readlines() for line in content.split('\n') if line.startswith('cpu')]
+
+            for cpu_line in lines:
+                if '' in cpu_line: cpu_line.remove('')
+                cpu_line = [cpu_line[0]]+[float(i) for i in cpu_line[1:]]
+                cpu_id,user,nice,system,idle,iowait,irq,softrig,steal,guest,guest_nice = cpu_line
+
+                Idle=idle+iowait
+                NonIdle=user+nice+system+irq+softrig+steal
+
+                Total=Idle+NonIdle
+                cpu_infos.update({cpu_id:{'total':Total,'idle':Idle}})
+            return cpu_infos
+
+    def getcpuload(self):
+        start = self.getcputime()
+        sleep(self.sleeptime)
+        stop = self.getcputime()
+
+        cpu_load = {}
+
+        for cpu in start:
+            Total = stop[cpu]['total']
+            PrevTotal = start[cpu]['total']
+
+            Idle = stop[cpu]['idle']
+            PrevIdle = start[cpu]['idle']
+            CPU_Percentage=((Total-PrevTotal)-(Idle-PrevIdle))/(Total-PrevTotal)*100
+            cpu_load.update({cpu: CPU_Percentage})
+        return cpu_load
         
 if __name__ == "__main__":              
     webServer = HTTPServer((hostName, serverPort), MyServer)
